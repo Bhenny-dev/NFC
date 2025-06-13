@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NFC Attendance</title>
+</head>
+<body>
+  <h2>Scan your NFC ID to log attendance</h2>
+  <button id="startScan">Start Scan</button>
+  <p id="status"></p>
+
+  <script>
+    const status = document.getElementById("status");
+
+    document.getElementById("startScan").addEventListener("click", async () => {
+      if ("NDEFReader" in window) {
+        const reader = new NDEFReader();
+        try {
+          await reader.scan();
+          status.textContent = "Waiting for NFC tag...";
+          reader.onreading = event => {
+            const uid = event.serialNumber;
+            status.textContent = `Scanned UID: ${uid}`;
+            fetch("log_attendance.php", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ uid: uid })
+            })
+            .then(res => res.json())
+            .then(data => {
+              status.textContent = `Result: ${data.status}`;
+            });
+          };
+        } catch (error) {
+          status.textContent = "Scan failed: " + error;
+        }
+      } else {
+        status.textContent = "Web NFC not supported on this device.";
+      }
+    });
+  </script>
+</body>
+</html>
